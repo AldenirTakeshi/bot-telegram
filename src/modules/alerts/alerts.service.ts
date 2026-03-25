@@ -52,6 +52,25 @@ export class AlertsService {
     }
   }
 
+  @Cron('0 8 1 * *', { name: 'monthly-fixed-costs-review' })
+  async sendMonthlyFixedCostsReview(): Promise<void> {
+    this.logger.log('Running monthly fixed costs review cron...');
+    const users = await this.userConfigService.findAllActive();
+
+    for (const user of users) {
+      try {
+        await this.telegramService.bot.telegram.sendMessage(
+          user.telegramChatId,
+          '📅 *Início do mês!*\n\nSeus gastos fixos do mês anterior foram mantidos.\n\nDeseja fazer alguma alteração?\n\n• "alterar Aluguel 2200" — mudar valor\n• "remover Spotify" — excluir um fixo\n• "adicionar Academia 100" — adicionar novo\n• "quais são meus fixos?" — ver a lista completa',
+          { parse_mode: 'Markdown' },
+        );
+        this.logger.log(`Sent monthly fixed review to chatId: ${user.telegramChatId}`);
+      } catch (err) {
+        this.logger.error(`Failed to send monthly review to user ${user.id}:`, err);
+      }
+    }
+  }
+
   @Cron('59 23 28-31 * *', { name: 'monthly-close-accounts' })
   async closeMonthlyAccounts(): Promise<void> {
     // Only run on the actual last day of the month

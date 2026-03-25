@@ -60,6 +60,18 @@ export class NlpService {
       return { intent: 'DELETE_LAST', confidence: 'high' };
     }
 
+    // DELETE_FIXED — "remover Aluguel" / "excluir Spotify"
+    const deleteFixedMatch = lower.match(/(?:remover|excluir|deletar|apagar)\s+(?!.*(gasto|despesa|lan[cç]amento))(.+)/);
+    if (deleteFixedMatch && !lower.includes('último') && !lower.includes('ultimo')) {
+      return { intent: 'DELETE_FIXED', fixedName: deleteFixedMatch[2].trim(), confidence: 'high' };
+    }
+
+    // UPDATE_FIXED — "alterar Aluguel 2200" / "mudar Spotify para 35"
+    const updateFixedMatch = lower.match(/(?:alterar|mudar|atualizar)\s+(.+?)\s+(?:para\s+)?(\d+[.,]?\d*)/);
+    if (updateFixedMatch) {
+      return { intent: 'UPDATE_FIXED', fixedName: updateFixedMatch[1].trim(), amount: parseFloat(updateFixedMatch[2].replace(',', '.')), confidence: 'high' };
+    }
+
     // LIST_FIXED
     if (/fixos|gastos fixos|lista.*fixo|quais.*fixos|meus fixos/.test(lower)) {
       return { intent: 'LIST_FIXED', confidence: 'high' };

@@ -53,6 +53,31 @@ export class FixedCostsService {
     }, 0);
   }
 
+  async deleteByName(userConfigId: number, name: string): Promise<FixedCost | null> {
+    const all = await this.findAllActive(userConfigId);
+    const match = all.find((c) => c.name.toLowerCase().includes(name.toLowerCase()));
+    if (!match) return null;
+    await this.repo.remove(match);
+    return match;
+  }
+
+  async updateAmount(userConfigId: number, name: string, newAmount: number): Promise<FixedCost | null> {
+    const all = await this.findAllActive(userConfigId);
+    const match = all.find((c) => c.name.toLowerCase().includes(name.toLowerCase()));
+    if (!match) return null;
+    match.amount = newAmount;
+    if (match.isCreditCard) match.currentAmount = newAmount;
+    return this.repo.save(match);
+  }
+
+  async resetMonthlyCards(userConfigId: number): Promise<void> {
+    const cards = await this.repo.find({ where: { userConfigId, isCreditCard: true, active: true } });
+    for (const card of cards) {
+      card.currentAmount = 0;
+    }
+    await this.repo.save(cards);
+  }
+
   async updateCardAmount(
     userConfigId: number,
     name: string,

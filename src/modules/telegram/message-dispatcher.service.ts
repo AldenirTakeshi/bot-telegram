@@ -211,6 +211,14 @@ export class MessageDispatcherService {
         await this.handleDeleteLast(chatId, userConfigId);
         break;
 
+      case 'DELETE_FIXED':
+        await this.handleDeleteFixed(chatId, parsedIntent, userConfigId);
+        break;
+
+      case 'UPDATE_FIXED':
+        await this.handleUpdateFixed(chatId, parsedIntent, userConfigId);
+        break;
+
       case 'UNKNOWN':
       default:
         await this.telegramService.sendMarkdown(chatId, BotMessages.UNKNOWN_COMMAND);
@@ -346,6 +354,34 @@ export class MessageDispatcherService {
       chatId,
       BotMessages.DELETE_LAST_SUCCESS(deleted.category, Number(deleted.amount)),
     );
+  }
+
+  private async handleDeleteFixed(chatId: string, intent: ParsedIntent, userConfigId: number): Promise<void> {
+    if (!intent.fixedName) {
+      await this.telegramService.sendMarkdown(chatId, '❌ Informe o nome do fixo. Ex: "remover Aluguel"');
+      return;
+    }
+    const deleted = await this.fixedCostsService.deleteByName(userConfigId, intent.fixedName);
+    if (!deleted) {
+      await this.telegramService.sendMarkdown(chatId, `❌ Gasto fixo *${intent.fixedName}* não encontrado. Envie "quais são meus fixos?" para ver a lista.`);
+      return;
+    }
+    await this.summaryService.recalculate(userConfigId);
+    await this.telegramService.sendMarkdown(chatId, `✅ *${deleted.name}* removido dos seus gastos fixos.`);
+  }
+
+  private async handleUpdateFixed(chatId: string, intent: ParsedIntent, userConfigId: number): Promise<void> {
+    if (!intent.fixedName || !intent.amount) {
+      await this.telegramService.sendMarkdown(chatId, '❌ Formato inválido. Ex: "alterar Aluguel 2200"');
+      return;
+    }
+    const updated = await this.fixedCostsService.updateAmount(userConfigId, intent.fixedName, intent.amount);
+    if (!updated) {
+      await this.telegramService.sendMarkdown(chatId, `❌ Gasto fixo *${intent.fixedName}* não encontrado. Envie "quais são meus fixos?" para ver a lista.`);
+      return;
+    }
+    await this.summaryService.recalculate(userConfigId);
+    await this.telegramService.sendMarkdown(chatId, `✅ *${updated.name}* atualizado para R$ ${Number(updated.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.`);
   }
 
   private async handleMonthlyReport(chatId: string, userConfigId: number): Promise<void> {

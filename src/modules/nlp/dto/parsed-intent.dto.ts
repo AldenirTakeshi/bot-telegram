@@ -9,6 +9,8 @@ export type IntentType =
   | 'LIST_EXPENSES'
   | 'LIST_FIXED'
   | 'DELETE_LAST'
+  | 'DELETE_FIXED'
+  | 'UPDATE_FIXED'
   | 'UNKNOWN';
 
 export interface ParsedIntent {
