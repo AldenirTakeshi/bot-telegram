@@ -115,23 +115,38 @@ export class OnboardingService {
       return this.finishOnboarding(chatId, userId, data);
     }
 
-    const match = text.match(/^(.+?)\s+([\d.,]+)(?:\s+(?:dia|todo dia|dia\s+)?(\d+))?$/i);
-    if (!match) {
-      await this.telegramService.sendMarkdown(chatId, '❌ Formato inválido. Use: *Nome Valor* (ex: Aluguel 2000)\nOu envie *pronto* para finalizar.');
-      return true;
+    const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+    const added: string[] = [];
+    const failed: string[] = [];
+
+    for (const line of lines) {
+      const match = line.match(/^(.+?)\s+([\d.,]+)(?:\s+(?:dia|todo dia|dia\s+)?(\d+))?$/i);
+      if (!match) {
+        failed.push(line);
+        continue;
+      }
+      const name = match[1].trim();
+      const amount = this.parseAmount(match[2]);
+      const dayOfMonth = match[3] ? parseInt(match[3]) : undefined;
+      if (!amount) {
+        failed.push(line);
+        continue;
+      }
+      const isCreditCard = /cartão|card|nubank|itaú|bradesco|santander|inter|c6|xp/i.test(name);
+      await this.fixedCostsService.create(userId, { name, amount, isCreditCard, dayOfMonth });
+      added.push(`• *${name}*: R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
     }
 
-    const name = match[1].trim();
-    const amount = this.parseAmount(match[2]);
-    const dayOfMonth = match[3] ? parseInt(match[3]) : undefined;
-    if (!amount) {
-      await this.telegramService.sendMarkdown(chatId, '❌ Valor inválido. Tente novamente.');
-      return true;
+    if (added.length > 0) {
+      const msg = `✅ Adicionado${added.length > 1 ? 's' : ''}:\n${added.join('\n')}\n\nDigite mais fixos ou envie *pronto* para finalizar.`;
+      await this.telegramService.sendMarkdown(chatId, msg);
     }
 
-    const isCreditCard = /cartão|card|nubank|itaú|bradesco|santander|inter|c6|xp/i.test(name);
-    await this.fixedCostsService.create(userId, { name, amount, isCreditCard, dayOfMonth });
-    await this.telegramService.sendMarkdown(chatId, BotMessages.ONBOARDING_FIXED_ADDED(name, amount));
+    if (failed.length > 0) {
+      const msg = `❌ Não entendi ${failed.length > 1 ? 'estas linhas' : 'esta linha'}:\n${failed.map((f) => `• ${f}`).join('\n')}\n\nUse o formato: *Nome Valor* (ex: Aluguel 2000)`;
+      await this.telegramService.sendMarkdown(chatId, msg);
+    }
+
     return true;
   }
 
