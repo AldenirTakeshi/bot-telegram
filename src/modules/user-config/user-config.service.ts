@@ -57,6 +57,18 @@ export class UserConfigService {
     return this.repo.findOneOrFail({ where: { id } });
   }
 
+  async resetUser(id: number): Promise<void> {
+    await this.repo.update(id, {
+      incomeTotal: 0,
+      investmentGoal: 0,
+      spendingCeiling: 0,
+      phoneSecondary: null,
+      onboardingCompleted: false,
+      onboardingStep: null,
+      onboardingData: null,
+    });
+  }
+
   async findAllActive(): Promise<UserConfig[]> {
     return this.repo.find({ where: { onboardingCompleted: true } });
   }

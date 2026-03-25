@@ -18,6 +18,10 @@ export class SummaryService {
     private readonly userConfigService: UserConfigService,
   ) {}
 
+  async deleteAllByUser(userConfigId: number): Promise<void> {
+    await this.repo.delete({ userConfigId });
+  }
+
   private getCurrentMonth(): string {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

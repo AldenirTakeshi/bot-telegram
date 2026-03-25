@@ -15,6 +15,10 @@ export class FixedCostsService {
     return this.repo.find({ where: { userConfigId, active: true } });
   }
 
+  async deleteAllByUser(userConfigId: number): Promise<void> {
+    await this.repo.delete({ userConfigId });
+  }
+
   async create(userConfigId: number, dto: CreateFixedCostDto): Promise<FixedCost> {
     const entity = this.repo.create({
       userConfigId,

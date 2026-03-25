@@ -103,6 +103,10 @@ export class ExpensesService {
     return last;
   }
 
+  async deleteAllByUser(userConfigId: number): Promise<void> {
+    await this.repo.delete({ userConfigId });
+  }
+
   async getDailyAverage(userConfigId: number, days: number): Promise<number> {
     const end = new Date();
     const start = new Date();

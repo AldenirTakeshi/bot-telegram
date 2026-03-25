@@ -43,6 +43,43 @@ export class MessageDispatcherService {
       await this.telegramService.sendMarkdown(ctx.chat.id, BotMessages.HELP_MENU);
     });
 
+    bot.command('reset', async (ctx) => {
+      const chatId = ctx.chat.id.toString();
+      await bot.telegram.sendMessage(chatId,
+        '⚠️ *Tem certeza?* Isso vai apagar *todos os seus dados*:\n\n• Gastos registrados\n• Gastos fixos\n• Resumos mensais\n• Configuração do perfil\n\nVocê precisará configurar tudo do zero.',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [[
+              { text: '✅ Sim, apagar tudo', callback_data: 'confirm_reset' },
+              { text: '❌ Cancelar', callback_data: 'cancel_reset' },
+            ]],
+          },
+        },
+      );
+    });
+
+    bot.action('confirm_reset', async (ctx) => {
+      const chatId = ctx.chat?.id.toString();
+      if (!chatId) return;
+      await ctx.answerCbQuery();
+      const user = await this.userConfigService.findByChatId(chatId);
+      if (!user) {
+        await ctx.editMessageText('❌ Usuário não encontrado.');
+        return;
+      }
+      await this.expensesService.deleteAllByUser(user.id);
+      await this.fixedCostsService.deleteAllByUser(user.id);
+      await this.summaryService.deleteAllByUser(user.id);
+      await this.userConfigService.resetUser(user.id);
+      await ctx.editMessageText('✅ Dados apagados. Envie /start para configurar novamente.');
+    });
+
+    bot.action('cancel_reset', async (ctx) => {
+      await ctx.answerCbQuery();
+      await ctx.editMessageText('👍 Reset cancelado. Seus dados estão intactos.');
+    });
+
     // Modo Casal: /parceiro <chatId> — authorizes a second phone
     bot.command('parceiro', async (ctx) => {
       const chatId = ctx.chat.id.toString();
