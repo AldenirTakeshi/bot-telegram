@@ -1,4 +1,6 @@
 export const BotMessages = {
+  GREETING: `Olá! Sou o *PocketGuard AI* 💰 — seu assistente de controle de gastos.\n\nMinha função é simples: te dizer *quanto você ainda pode gastar* no mês sem estourar o orçamento.\n\nComo posso te ajudar:\n\n💸 *Registrar gasto:* "Mercado 81"\n💵 *Ver saldo:* "Quanto tenho?"\n🤔 *Consultar compra:* "Posso comprar um tênis de 400?"\n📊 *Relatório:* "relatório do mês"\n📋 *Ver todos os gastos:* "gastos do mês"\n\nSe ainda não configurou seu perfil, envie /start para começar!`,
+
   WELCOME: `Olá! Sou o *PocketGuard AI* 💰\n\nVou te ajudar a controlar seus gastos com uma única pergunta: *"Quanto ainda posso gastar?"*\n\nVamos configurar seu perfil. Qual é a sua *renda total mensal*? (ex: 10500)`,
 
   ONBOARDING_INVESTMENT: (ceiling: number) =>

@@ -55,6 +55,11 @@ export class NlpService {
   private stubParse(text: string): ParsedIntent {
     const lower = text.toLowerCase().trim();
 
+    // GREETING
+    if (/^(oi|olá|ola|opa|eae|e aí|e ai|hey|hello|bom dia|boa tarde|boa noite|tudo bem|tudo bom|fala|fala comigo|me ajuda|como funciona|o que você faz|o que voce faz|quem é você|quem e voce|ajuda)[\s!?.,]*$/.test(lower)) {
+      return { intent: 'GREETING', confidence: 'high' };
+    }
+
     // DELETE_LAST / UNDO
     if (/desfazer|undo|deletar [uú]ltimo|apagar [uú]ltimo|errei|cancela|remover [uú]ltimo/.test(lower)) {
       return { intent: 'DELETE_LAST', confidence: 'high' };

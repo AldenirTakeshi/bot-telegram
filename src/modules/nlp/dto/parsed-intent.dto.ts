@@ -11,6 +11,7 @@ export type IntentType =
   | 'DELETE_LAST'
   | 'DELETE_FIXED'
   | 'UPDATE_FIXED'
+  | 'GREETING'
   | 'UNKNOWN';
 
 export interface ParsedIntent {

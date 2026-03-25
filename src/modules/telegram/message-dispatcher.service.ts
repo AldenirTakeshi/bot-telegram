@@ -237,6 +237,10 @@ export class MessageDispatcherService {
         await this.handleUpdateFixed(chatId, parsedIntent, userConfigId);
         break;
 
+      case 'GREETING':
+        await this.telegramService.sendMarkdown(chatId, BotMessages.GREETING);
+        break;
+
       case 'UNKNOWN':
       default:
         await this.telegramService.sendMarkdown(chatId, BotMessages.UNKNOWN_COMMAND);
