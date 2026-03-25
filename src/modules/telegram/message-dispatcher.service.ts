@@ -248,7 +248,11 @@ export class MessageDispatcherService {
     if (remaining < 0) {
       await this.telegramService.sendMarkdown(chatId, BotMessages.CEILING_ALERT_100(Math.abs(remaining)));
     } else if (burnRate >= 70) {
-      await this.telegramService.sendMarkdown(chatId, BotMessages.CEILING_ALERT_70(burnRate, remaining));
+      // Alert at each 10% threshold crossed (70, 80, 90)
+      const threshold = Math.floor(burnRate / 10) * 10;
+      if (threshold >= 70) {
+        await this.telegramService.sendMarkdown(chatId, BotMessages.CEILING_ALERT(burnRate, remaining));
+      }
     }
   }
 

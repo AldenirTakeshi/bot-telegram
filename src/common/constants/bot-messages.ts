@@ -60,8 +60,13 @@ export const BotMessages = {
     );
   },
 
-  CEILING_ALERT_70: (burnRate: number, remaining: number) =>
-    `⚠️ *Atenção!* Você já usou *${burnRate.toFixed(1)}%* do seu teto de gastos variáveis.\n\n💵 Restam apenas *R$ ${formatCurrency(remaining)}*. Vá com calma nos próximos dias! 🐢`,
+  CEILING_ALERT: (burnRate: number, remaining: number) => {
+    const emoji = burnRate >= 90 ? '🔶' : '⚠️';
+    const tip = burnRate >= 90
+      ? 'Cuidado, você está quase no limite!'
+      : 'Vá com calma nos próximos dias! 🐢';
+    return `${emoji} *Atenção!* Você já usou *${Math.floor(burnRate)}%* do seu teto de gastos variáveis.\n\n💵 Restam apenas *R$ ${formatCurrency(remaining)}*. ${tip}`;
+  },
 
   CEILING_ALERT_100: (overAmount: number) =>
     `🔴 *Teto estourado!* Você ultrapassou seu limite em *R$ ${formatCurrency(overAmount)}*.\n\nConsidere revisar seus gastos ou ajustar o teto com: "Meu teto é [valor]"`,
