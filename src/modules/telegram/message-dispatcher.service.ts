@@ -8,7 +8,7 @@ import { FixedCostsService } from '../fixed-costs/fixed-costs.service';
 import { SummaryService } from '../summary/summary.service';
 import { BotMessages } from '../../common/constants/bot-messages';
 import { ParsedIntent } from '../nlp/dto/parsed-intent.dto';
-import { getCurrentMonth, formatCurrency } from '../../common/helpers/format.helper';
+import { getCurrentMonth } from '../../common/helpers/format.helper';
 import { RateLimiterService } from '../../common/services/rate-limiter.service';
 
 export type { ParsedIntent };
@@ -237,10 +237,19 @@ export class MessageDispatcherService {
     });
 
     const summary = await this.summaryService.recalculate(userConfigId);
+    const remaining = Number(summary.remaining);
+    const burnRate = Number(summary.burnRatePercent);
+
     await this.telegramService.sendMarkdown(
       chatId,
-      BotMessages.EXPENSE_REGISTERED(category, intent.amount, Number(summary.remaining)),
+      BotMessages.EXPENSE_REGISTERED(category, intent.amount, remaining),
     );
+
+    if (remaining < 0) {
+      await this.telegramService.sendMarkdown(chatId, BotMessages.CEILING_ALERT_100(Math.abs(remaining)));
+    } else if (burnRate >= 70) {
+      await this.telegramService.sendMarkdown(chatId, BotMessages.CEILING_ALERT_70(burnRate, remaining));
+    }
   }
 
   private async handleQueryBalance(chatId: string, userConfigId: number): Promise<void> {
@@ -340,19 +349,14 @@ export class MessageDispatcherService {
     const month = getCurrentMonth();
     const categories = await this.expensesService.getSpentByCategory(userConfigId, month);
 
-    const topCategoryLines = categories
-      .slice(0, 5)
-      .map((c) => `  • ${c.category}: R$ ${formatCurrency(c.total)}`)
-      .join('\n');
-
-    const report =
-      BotMessages.MONTHLY_REPORT(
-        month,
-        Number(summary.spendingCeilingSnapshot),
-        Number(summary.fixedCostsTotal),
-        Number(summary.variableSpent),
-        Number(summary.remaining),
-      ) + (topCategoryLines ? `\n\n📈 *Categorias:*\n${topCategoryLines}` : '');
+    const report = BotMessages.MONTHLY_REPORT(
+      month,
+      Number(summary.spendingCeilingSnapshot),
+      Number(summary.fixedCostsTotal),
+      Number(summary.variableSpent),
+      Number(summary.remaining),
+      categories,
+    );
 
     await this.telegramService.sendMarkdown(chatId, report);
   }

@@ -34,8 +34,37 @@ export const BotMessages = {
   CEILING_UPDATED: (ceiling: number) =>
     `✅ Teto de gastos atualizado: *R$ ${formatCurrency(ceiling)}*`,
 
-  MONTHLY_REPORT: (month: string, ceiling: number, fixedTotal: number, variableSpent: number, remaining: number) =>
-    `📊 *Relatório — ${month}*\n\n🎯 Teto: R$ ${formatCurrency(ceiling)}\n🔒 Fixos: R$ ${formatCurrency(fixedTotal)}\n💸 Variáveis: R$ ${formatCurrency(variableSpent)}\n💵 *Restante: R$ ${formatCurrency(remaining)}*`,
+  MONTHLY_REPORT: (
+    month: string,
+    ceiling: number,
+    fixedTotal: number,
+    variableSpent: number,
+    remaining: number,
+    topCategories: { category: string; total: number }[],
+  ) => {
+    const burnRate = ceiling > 0 ? ((variableSpent / ceiling) * 100) : 0;
+    const categoryLines = topCategories
+      .slice(0, 5)
+      .map((c) => `  • ${c.category}: R$ ${formatCurrency(c.total)}`)
+      .join('\n');
+    const statusLine = remaining >= 0
+      ? `💚 Você ainda tem *R$ ${formatCurrency(remaining)}* disponível no teto.`
+      : `🔴 Você estourou o teto em *R$ ${formatCurrency(Math.abs(remaining))}*.`;
+    return (
+      `📊 *Relatório — ${month}*\n\n` +
+      `🎯 Teto: R$ ${formatCurrency(ceiling)}\n` +
+      `🔒 Fixos: R$ ${formatCurrency(fixedTotal)}\n` +
+      `💸 Variáveis: R$ ${formatCurrency(variableSpent)} *(${burnRate.toFixed(1)}% do teto)*\n\n` +
+      `${statusLine}` +
+      (categoryLines ? `\n\n📈 *Onde mais gastou:*\n${categoryLines}` : '')
+    );
+  },
+
+  CEILING_ALERT_70: (burnRate: number, remaining: number) =>
+    `⚠️ *Atenção!* Você já usou *${burnRate.toFixed(1)}%* do seu teto de gastos variáveis.\n\n💵 Restam apenas *R$ ${formatCurrency(remaining)}*. Vá com calma nos próximos dias! 🐢`,
+
+  CEILING_ALERT_100: (overAmount: number) =>
+    `🔴 *Teto estourado!* Você ultrapassou seu limite em *R$ ${formatCurrency(overAmount)}*.\n\nConsidere revisar seus gastos ou ajustar o teto com: "Meu teto é [valor]"`,
 
   DELETE_LAST_SUCCESS: (category: string, amount: number) =>
     `✅ Último gasto removido: *${category}* — R$ ${formatCurrency(amount)}`,
