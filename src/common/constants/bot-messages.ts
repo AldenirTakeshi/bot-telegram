@@ -13,8 +13,8 @@ export const BotMessages = {
   ONBOARDING_COMPLETE: (ceiling: number, fixedTotal: number, freeBalance: number) =>
     `🎉 *Configuração concluída!*\n\n📊 Resumo do mês:\n• Teto: R$ ${formatCurrency(ceiling)}\n• Fixos: R$ ${formatCurrency(fixedTotal)}\n• *Saldo livre: R$ ${formatCurrency(freeBalance)}*\n\nAgora é só mandar seus gastos! Ex: "Mercado 81" ou "iFood 45"`,
 
-  EXPENSE_REGISTERED: (category: string, amount: number, remaining: number) =>
-    `✅ *${category}*: R$ ${formatCurrency(amount)} registrado.\n\n💵 Saldo restante: *R$ ${formatCurrency(remaining)}*`,
+  EXPENSE_REGISTERED: (category: string, amount: number, remaining: number, registeredBy?: string) =>
+    `✅ *${category}*: R$ ${formatCurrency(amount)} registrado${registeredBy ? ` por *${registeredBy}*` : ''}.\n\n💵 Saldo restante: *R$ ${formatCurrency(remaining)}*`,
 
   BALANCE_QUERY: (remaining: number, burnRate: number, daysLeft: number) =>
     `💵 *Saldo restante: R$ ${formatCurrency(remaining)}*\n\n📊 ${burnRate.toFixed(1)}% do teto variável gasto\n📅 ${daysLeft} dias restantes no mês`,

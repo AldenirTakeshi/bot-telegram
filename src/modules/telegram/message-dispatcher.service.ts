@@ -105,26 +105,41 @@ export class MessageDispatcherService {
     });
 
     bot.on('text', async (ctx) => {
+      const chatType = ctx.chat.type;
+      const isGroup = chatType === 'group' || chatType === 'supergroup';
       const chatId = ctx.chat.id.toString();
       const text = ctx.message.text;
+      const senderName = [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(' ');
 
-      this.logger.log(`Message from ${chatId}: "${text}"`);
+      this.logger.log(`Message from ${chatId} (${chatType}): "${text}"`);
 
       // Skip commands (handled by telegraf directly)
       if (text.startsWith('/')) return;
 
-      // Rate limiting
-      if (!this.rateLimiter.isAllowed(chatId)) {
-        const secs = this.rateLimiter.secondsUntilReset(chatId);
+      // In groups, only process if the bot is mentioned or message starts with known patterns
+      // (no restriction — all messages are processed, consistent with private chat behavior)
+
+      // Rate limiting — use individual user id in groups to avoid one user blocking others
+      const rateLimitKey = isGroup ? ctx.from.id.toString() : chatId;
+      if (!this.rateLimiter.isAllowed(rateLimitKey)) {
+        const secs = this.rateLimiter.secondsUntilReset(rateLimitKey);
         await this.telegramService.sendMarkdown(chatId, `⏳ Devagar! Aguarde ${secs}s antes de enviar outra mensagem.`);
         return;
       }
 
       try {
-        // Resolve user — supports Modo Casal (secondary phone lookup)
-        const user = await this.userConfigService.findByPhone(chatId);
+        // In groups: use group chatId as the account. In private: support Modo Casal lookup.
+        const accountId = isGroup ? chatId : chatId;
+        const user = isGroup
+          ? await this.userConfigService.findByChatId(accountId)
+          : await this.userConfigService.findByPhone(accountId);
+
         if (!user) {
-          await this.telegramService.sendMarkdown(chatId, '👋 Olá! Envie /start para configurar seu perfil.');
+          if (isGroup) {
+            await this.telegramService.sendMarkdown(chatId, '👋 Grupo ainda não configurado! Um admin deve enviar /start aqui para configurar o orçamento compartilhado.');
+          } else {
+            await this.telegramService.sendMarkdown(chatId, '👋 Olá! Envie /start para configurar seu perfil.');
+          }
           return;
         }
 
@@ -136,7 +151,7 @@ export class MessageDispatcherService {
 
         // If onboarding not completed, redirect to /start
         if (!user.onboardingCompleted) {
-          await this.telegramService.sendMarkdown(chatId, '👋 Você ainda não configurou seu perfil. Envie /start para começar.');
+          await this.telegramService.sendMarkdown(chatId, '👋 Configuração incompleta. Envie /start para começar.');
           return;
         }
 
@@ -145,12 +160,15 @@ export class MessageDispatcherService {
         this.logger.log(`Intent: ${parsed.intent} (confidence: ${parsed.confidence})`);
 
         if (parsed.confidence === 'low' && parsed.intent === 'UNKNOWN') {
-          await this.telegramService.sendMarkdown(chatId, BotMessages.UNKNOWN_COMMAND);
+          // In groups, ignore unknown messages to avoid spamming
+          if (!isGroup) {
+            await this.telegramService.sendMarkdown(chatId, BotMessages.UNKNOWN_COMMAND);
+          }
           return;
         }
 
-        // Pass source phone for Modo Casal tracking
-        const sourcePhone = chatId !== user.telegramChatId ? chatId : undefined;
+        // In groups: track member name as sourcePhone. In private: track Modo Casal.
+        const sourcePhone = isGroup ? senderName : (chatId !== user.telegramChatId ? chatId : undefined);
         await this.dispatch(user.telegramChatId, parsed, user.id, sourcePhone);
       } catch (err) {
         this.logger.error(`Unhandled error processing message from ${chatId}:`, err);
@@ -248,9 +266,10 @@ export class MessageDispatcherService {
     const remaining = Number(summary.remaining);
     const burnRate = Number(summary.burnRatePercent);
 
+    const registeredBy = sourcePhone && !sourcePhone.match(/^\d+$/) ? sourcePhone : undefined;
     await this.telegramService.sendMarkdown(
       chatId,
-      BotMessages.EXPENSE_REGISTERED(category, intent.amount, remaining),
+      BotMessages.EXPENSE_REGISTERED(category, intent.amount, remaining, registeredBy),
     );
 
     if (remaining < 0) {
