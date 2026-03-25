@@ -78,11 +78,17 @@ export class NlpService {
     }
 
     // LIST_EXPENSES
-    if (/gastei hoje|gastos (de |do )?hoje|o que gastei/.test(lower)) {
+    if (/gastei hoje|gastos (de |do )?hoje|o que gastei hoje/.test(lower)) {
       return { intent: 'LIST_EXPENSES', period: 'today', confidence: 'high' };
     }
     if (/gastei (essa|esta) semana|gastos da semana|semana/.test(lower)) {
       return { intent: 'LIST_EXPENSES', period: 'week', confidence: 'high' };
+    }
+    if (/gastos do m[eê]s|tudo (que |o que )?gastei|discriminado|extrato|todos os gastos|listagem/.test(lower)) {
+      return { intent: 'LIST_EXPENSES', period: 'all', confidence: 'high' };
+    }
+    if (/o que gastei/.test(lower)) {
+      return { intent: 'LIST_EXPENSES', period: 'today', confidence: 'high' };
     }
 
     // QUERY_BALANCE

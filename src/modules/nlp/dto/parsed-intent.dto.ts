@@ -20,6 +20,6 @@ export interface ParsedIntent {
   description?: string;
   fixedName?: string;
   dayOfMonth?: number;
-  period?: 'today' | 'week' | 'month';
+  period?: 'today' | 'week' | 'month' | 'all';
   confidence: 'high' | 'low';
 }

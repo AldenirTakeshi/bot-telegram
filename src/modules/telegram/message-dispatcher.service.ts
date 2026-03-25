@@ -321,12 +321,32 @@ export class MessageDispatcherService {
 
   private async handleListExpenses(chatId: string, intent: ParsedIntent, userConfigId: number): Promise<void> {
     const period = intent.period ?? 'today';
+
     const expenses = period === 'week'
       ? await this.expensesService.listThisWeek(userConfigId)
-      : await this.expensesService.listToday(userConfigId);
+      : period === 'all'
+        ? await this.expensesService.listThisMonth(userConfigId)
+        : await this.expensesService.listToday(userConfigId);
 
     if (!expenses.length) {
       await this.telegramService.sendMarkdown(chatId, BotMessages.LIST_EXPENSES_EMPTY(period));
+      return;
+    }
+
+    if (period === 'all') {
+      const mapped = expenses.map((e) => ({
+        category: e.category,
+        amount: Number(e.amount),
+        description: e.description,
+        date: new Date(e.expenseDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      }));
+      const total = mapped.reduce((s, e) => s + e.amount, 0);
+      const lines = mapped.map((e) => `• ${e.date} *${e.category}*${e.description ? ` (${e.description})` : ''}: R$ ${e.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+      const chunks = this.splitIntoChunks(lines, 30);
+      for (const chunk of chunks) {
+        await this.telegramService.sendMarkdown(chatId, chunk.join('\n'));
+      }
+      await this.telegramService.sendMarkdown(chatId, `💸 *Total do mês: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*`);
       return;
     }
 
@@ -336,6 +356,14 @@ export class MessageDispatcherService {
       description: e.description,
     }));
     await this.telegramService.sendMarkdown(chatId, BotMessages.LIST_EXPENSES(mapped, period));
+  }
+
+  private splitIntoChunks(lines: string[], size: number): string[][] {
+    const chunks: string[][] = [];
+    for (let i = 0; i < lines.length; i += size) {
+      chunks.push(lines.slice(i, i + size));
+    }
+    return chunks;
   }
 
   private async handleListFixed(chatId: string, userConfigId: number): Promise<void> {

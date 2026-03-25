@@ -63,6 +63,15 @@ export class ExpensesService {
     return rows.map((r) => ({ category: r.category, total: parseFloat(r.total) }));
   }
 
+  async listThisMonth(userConfigId: number): Promise<DailyExpense[]> {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return this.repo.find({
+      where: { userConfigId },
+      order: { expenseDate: 'DESC', createdAt: 'DESC' },
+    }).then((all) => all.filter((e) => new Date(e.expenseDate) >= startOfMonth));
+  }
+
   async listToday(userConfigId: number): Promise<DailyExpense[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

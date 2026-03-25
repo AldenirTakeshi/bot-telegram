@@ -76,8 +76,10 @@ export const BotMessages = {
 
   DELETE_LAST_EMPTY: `📭 Nenhum gasto encontrado para remover.`,
 
-  LIST_EXPENSES_EMPTY: (period: string) =>
-    `📭 Nenhum gasto registrado ${period === 'today' ? 'hoje' : 'nessa semana'}.`,
+  LIST_EXPENSES_EMPTY: (period: string) => {
+    const label = period === 'today' ? 'hoje' : period === 'week' ? 'essa semana' : 'este mês';
+    return `📭 Nenhum gasto registrado ${label}.`;
+  },
 
   LIST_EXPENSES: (expenses: { category: string; amount: number; description?: string | null }[], period: string) => {
     const title = period === 'today' ? '📋 *Gastos de hoje:*' : '📋 *Gastos da semana:*';
